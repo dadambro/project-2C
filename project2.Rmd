@@ -1,0 +1,305 @@
+---
+title: "Project 2"
+author: "Grace Holliday and Damon D'Ambrosio"
+date: "2023-07-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+library(gbm)
+```
+# Introduction 
+
+The goal/purpose of this project is to explore the factors influencing the 
+amount of shares (popularity) of articles published by Mashable in a period of 
+two years.
+
+The data includes 39,644 observations of 61 total variables.  For our
+exploration, we will use variables num_imgs, num_videos, num_keywords, 
+weekday_is variables (including is_weekend), global_subjectivity (Text 
+subjectivity),global_sentiment_polarity (Text sentiment polarity), 
+global_rate_positive_words (Rate of positive words in the content), 
+global_rate_negative_words (Rate of negative words in the content), 
+title_subjectivity, and title_polarity, to explore the target variable (shares).
+
+The methods we will use to model the response include:  
+- Linear Regression  
+- Random Forest  
+- Boosted Tree  
+
+# Data
+```{r, echo=TRUE}
+dat <- read_csv("OnlineNewsPopularity.csv")
+
+# Subset data to variables we want
+dat <- dat[,-c(1:9,12,20:31,39:44, 49:55,58,59)]
+
+# First subsetting to data_channel_is_lifestyle - will automate later.
+dattype <- subset(dat,dat$data_channel_is_lifestyle==1)
+# Removing data channel columns
+dattype <- dattype[,-c(4:9)]
+
+```
+
+# Summarizations  
+
+First, we will produce basic summary statistics and plots about the training 
+data.  To do this, we first need to divide the data into a training and test 
+set.  
+```{r, echo=TRUE}
+# First, establishing every categorical variable as a character
+# so can change the factor
+dattype$weekday_is_monday <- as.character(dattype$weekday_is_monday)
+dattype$weekday_is_tuesday <- as.character(dattype$weekday_is_tuesday)
+dattype$weekday_is_wednesday <- as.character(dattype$weekday_is_wednesday)
+dattype$weekday_is_thursday <- as.character(dattype$weekday_is_thursday)
+dattype$weekday_is_friday <- as.character(dattype$weekday_is_friday)
+dattype$weekday_is_saturday <- as.character(dattype$weekday_is_saturday)
+dattype$weekday_is_sunday <- as.character(dattype$weekday_is_sunday)
+
+# Creating single variable for day 1 = Monday 2 = Tuesday 3 = Wednesday
+# 4 = Thursday 5 = Friday 6 = Saturday 7 = Sunday 0 if no day, also
+# making these a factor and not 0 and 1 for ensemble models
+
+for(i in 1:nrow(dattype))
+{
+  if(dattype[i,4]==1)
+  {
+    dattype[i,19] <- 'Monday'
+    dattype[i,4] <- 'Y'
+    dattype[i,5] <- 'N'
+    dattype[i,6] <- 'N'
+    dattype[i,7] <- 'N'
+    dattype[i,8] <- 'N'
+    dattype[i,9] <- 'N' 
+    dattype[i,10] <- 'N'
+  }
+  else if (dattype[i,5]==1)
+  {
+    dattype[i,19] <- 'Tuesday'
+    dattype[i,4] <- 'N'
+    dattype[i,5] <- 'Y'
+    dattype[i,6] <- 'N'
+    dattype[i,7] <- 'N'
+    dattype[i,8] <- 'N'
+    dattype[i,9] <- 'N' 
+    dattype[i,10] <- 'N'
+  }
+  else if (dattype[i,6]==1)
+  {
+    dattype[i,19] <- 'Wednesday'
+    dattype[i,6] <- 'Y'
+    dattype[i,4] <- 'N'
+    dattype[i,5] <- 'N'
+    dattype[i,7] <- 'N'
+    dattype[i,8] <- 'N'
+    dattype[i,9] <- 'N' 
+    dattype[i,10] <- 'N'
+  }
+  else if (dattype[i,7]==1)
+  {
+    dattype[i,19] <- 'Thursday'
+    dattype[i,6] <- 'N'
+    dattype[i,4] <- 'N'
+    dattype[i,5] <- 'N'
+    dattype[i,7] <- 'Y'
+    dattype[i,8] <- 'N'
+    dattype[i,9] <- 'N' 
+    dattype[i,10] <- 'N'
+    }
+  else if (dattype[i,8]==1)
+  {
+    dattype[i,19] <- 'Friday'
+    dattype[i,6] <- 'N'
+    dattype[i,4] <- 'N'
+    dattype[i,5] <- 'N'
+    dattype[i,7] <- 'N'
+    dattype[i,8] <- 'Y'
+    dattype[i,9] <- 'N' 
+    dattype[i,10] <- 'N'
+  }
+  else if (dattype[i,9]==1)
+  {
+    dattype[i,19] <- 'Saturday'
+    dattype[i,6] <- 'N'
+    dattype[i,4] <- 'N'
+    dattype[i,5] <- 'N'
+    dattype[i,7] <- 'N'
+    dattype[i,8] <- 'N'
+    dattype[i,9] <- 'Y' 
+    dattype[i,10] <- 'N'
+  }
+  else if (dattype[i,10]==1)
+  {
+    dattype[i,19] <- 'Sunday'
+    dattype[i,6] <- 'N'
+    dattype[i,4] <- 'N'
+    dattype[i,5] <- 'N'
+    dattype[i,7] <- 'N'
+    dattype[i,8] <- 'N'
+    dattype[i,9] <- 'N' 
+    dattype[i,10] <- 'Y'
+  }
+  else
+  {
+    dattype[i,19] <- 'NA'
+  }
+}
+
+colnames(dattype)[19] <- 'day'
+
+# and back to a factor
+dattype$weekday_is_monday <- as.factor(dattype$weekday_is_monday)
+dattype$weekday_is_tuesday <- as.factor(dattype$weekday_is_tuesday)
+dattype$weekday_is_wednesday <- as.factor(dattype$weekday_is_wednesday)
+dattype$weekday_is_thursday <- as.factor(dattype$weekday_is_thursday)
+dattype$weekday_is_friday <- as.factor(dattype$weekday_is_friday)
+dattype$weekday_is_saturday <- as.factor(dattype$weekday_is_saturday)
+dattype$weekday_is_sunday <- as.factor(dattype$weekday_is_sunday)
+dattype$day <- as.factor(dattype$day)
+
+# First setting seed for reproducibility.
+set.seed(1234)
+# Divide data into training and test set.
+train <- sample(1:nrow(dattype), size = nrow(dattype)*.70)
+test <- setdiff(1:nrow(dattype), train)
+# training and testing subsets
+datTrain <- dattype[train, ]
+datTest <- dattype[test, ]
+```
+
+## Summary Statistics  
+Now, we will conduct exploratory data analysis through creation of basic 
+summary statistics and graphs exploring variables of interest to our 
+response (shares) before we select variables for potential models.
+
+### Mean Shares by Day
+```{r, echo=TRUE}
+datTrain %>%
+  group_by(day) %>%
+  summarise_at(vars(shares), list(name = mean))
+```
+This summarization reveals the average number of shares by day of the week
+(Days 1-7, Mon-Sun).  The highest average represents the day with the most
+shares.  A day of 0 means no day was specified.
+
+### Insert additional summaries here
+
+
+## Graphs  
+
+### Number of Images vs Shares
+We can inspect the trend of shares as a function of the number of images.  If 
+the points show an upward trend, then articles with more images tend to be 
+shared more often.  If the points show a downward trend, then articles with 
+less images tend to be shared more often.
+```{r, echo=TRUE}
+plot(datTrain$shares~datTrain$num_imgs)
+```
+
+### Title Subjectivity vs Shares
+We can inspect the trend of shares as a function of title subjectivity.  If the 
+points show an upward trend, then articles with higher title subjectivity tend
+to be shared more often.  If the points show a downward trend, then articles 
+with lower title subjectivity tend to be shared more often.
+```{r, echo=TRUE}
+plot(datTrain$shares~datTrain$title_subjectivity)
+```
+
+### Average Number of Keywords vs Shares
+We can inspect the trend of shares as a function of number of keywords.  If the 
+bars show an upward trend, then articles with more keywords tend to be shared
+more often.  If the bars show a downward trend, then articles with less 
+keywords tend to be shared more often.
+```{r, echo=TRUE}
+datTrainp2$num_keywords <- as.factor(datTrainp2$num_keywords)
+means <- datTrainp2 %>%
+  group_by(num_keywords) %>%
+  summarise_at(vars(shares), list(name = mean))
+barplot(height=means$name, names=means$num_keywords)
+```
+
+### Insert additional graphs here
+
+# Modeling
+
+insert short but thorough explanation of linear regression here.
+
+## Linear Models
+
+This first model will explore the impact of images as combined with number of 
+key words, title subjectivity, sentiment polarity, and positive word rate.
+```{r, echo=TRUE}
+mod2 <- lm(shares~num_imgs+num_keywords+title_subjectivity+global_subjectivity+
+             global_sentiment_polarity + global_rate_positive_words,
+              data=datTrain)
+summary(mod2)
+```
+ 
+## Ensemble Models
+
+### Random Forest Model
+Insert random forest model here
+
+### Boosted Tree Model  
+Boosting is a general approach that can be applied to trees and allows for the 
+slow training of trees.  The trees are grown sequentially with each subsequent 
+tree being grown on a modified version of the original data.  The predictions
+are then updated as the trees are grown, and new trees are grown by considering
+the errors in the trees previously created. Lambda represents a shrinkage
+parameter than slows the fitting process.
+
+Below is a boosted tree model to predict shares.
+```{r, echo=TRUE}
+# this is regression, not classification
+#removing previously created day variable for boosted tree model
+datTrain <- datTrain[,-19]
+datTest <- datTest[,-19]
+boostFit <- train(shares~., data=datTrain, method="gbm",
+                      preProcess=c("center","scale"),
+                      trControl=trainControl(method='cv',number=5),
+                      tuneGrid = expand.grid(n.trees=seq(25,200,50),
+                                             interaction.depth=seq(1,4,1),
+                                             shrinkage=0.1,
+                                             n.minobsinnode=10))
+
+# plot fit
+plot(boostFit)
+boostFit$finalModel
+
+# test fit
+test_x = datTest[, -18] 
+test_y = datTest[, 18] 
+pred_y = predict(boostFit, test_x)
+x_ax = 1:length(pred_y)
+x_ax <- as.numeric(x_ax)
+test_y <- test_y$shares 
+test_y <- as.integer(test_y)
+pred_y <- as.integer(pred_y)
+plot(x_ax, test_y, col="blue", pch=20, cex=.9)
+lines(x_ax, pred_y, col="red", pch=20, cex=.9)
+```
+Here, the red lines are the predicted values for each observation.  If the red
+lines are close to following the blue dots (which are reperesentative of the
+actual value for each observation), then the model is closely predicting.
+
+
+Comparison
+All four of the models should be compared on the test set and a winner declared 
+(this should be automated to be correct across all the created documents).
+This can be done by one group member and the automation done by the other 
+(see below).
+
+Automation
+Once you’ve completed the above for a particular data channel, adapt the code 
+so that you can use a parameter in your build process. You should be able to 
+automatically generate an analysis report for each
+data_channel_is_* variable - although again, you may want to create a new 
+variable to help with the
+subsetting. You’ll end up with six total outputted documents.
+
+This should be done by the group member that doesn’t automate the comparison of 
+models part.
