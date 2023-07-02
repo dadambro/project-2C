@@ -1,7 +1,7 @@
 ---
 title: "Project 2"
 author: "Grace Holliday and Damon D'Ambrosio"
-date: "2023-07-01"
+date: "2023-07-02"
 output: html_document
 ---
 
@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
 library(gbm)
+library(randomForest)
 ```
 # Introduction 
 
@@ -31,7 +32,7 @@ The methods we will use to model the response include:
 - Boosted Tree  
 
 # Data
-```{r, echo=TRUE}
+```{r read_in}
 dat <- read_csv("OnlineNewsPopularity.csv")
 
 # Subset data to variables we want
@@ -39,9 +40,9 @@ dat <- dat[,-c(1:9,12,20:31,39:44, 49:55,58,59)]
 
 # First subsetting to data_channel_is_lifestyle - will automate later.
 dattype <- subset(dat,dat$data_channel_is_lifestyle==1)
+
 # Removing data channel columns
 dattype <- dattype[,-c(4:9)]
-
 ```
 
 # Summarizations  
@@ -49,7 +50,7 @@ dattype <- dattype[,-c(4:9)]
 First, we will produce basic summary statistics and plots about the training 
 data.  To do this, we first need to divide the data into a training and test 
 set.  
-```{r, echo=TRUE}
+```{r data_setup}
 # First, establishing every categorical variable as a character
 # so can change the factor
 dattype$weekday_is_monday <- as.character(dattype$weekday_is_monday)
@@ -161,11 +162,16 @@ dattype$weekday_is_saturday <- as.factor(dattype$weekday_is_saturday)
 dattype$weekday_is_sunday <- as.factor(dattype$weekday_is_sunday)
 dattype$day <- as.factor(dattype$day)
 
+# Setting order of new factor levels
+dattype$day <- factor(dattype$day, levels =c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+
 # First setting seed for reproducibility.
 set.seed(1234)
+
 # Divide data into training and test set.
 train <- sample(1:nrow(dattype), size = nrow(dattype)*.70)
 test <- setdiff(1:nrow(dattype), train)
+
 # training and testing subsets
 datTrain <- dattype[train, ]
 datTest <- dattype[test, ]
@@ -177,7 +183,7 @@ summary statistics and graphs exploring variables of interest to our
 response (shares) before we select variables for potential models.
 
 ### Mean Shares by Day
-```{r, echo=TRUE}
+```{r summary1}
 datTrain %>%
   group_by(day) %>%
   summarise_at(vars(shares), list(name = mean))
@@ -196,7 +202,7 @@ We can inspect the trend of shares as a function of the number of images.  If
 the points show an upward trend, then articles with more images tend to be 
 shared more often.  If the points show a downward trend, then articles with 
 less images tend to be shared more often.
-```{r, echo=TRUE}
+```{r graph1}
 plot(datTrain$shares~datTrain$num_imgs)
 ```
 
@@ -205,7 +211,7 @@ We can inspect the trend of shares as a function of title subjectivity.  If the
 points show an upward trend, then articles with higher title subjectivity tend
 to be shared more often.  If the points show a downward trend, then articles 
 with lower title subjectivity tend to be shared more often.
-```{r, echo=TRUE}
+```{r graph2}
 plot(datTrain$shares~datTrain$title_subjectivity)
 ```
 
@@ -214,7 +220,7 @@ We can inspect the trend of shares as a function of number of keywords.  If the
 bars show an upward trend, then articles with more keywords tend to be shared
 more often.  If the bars show a downward trend, then articles with less 
 keywords tend to be shared more often.
-```{r, echo=TRUE}
+```{r graph3}
 datTrainp2$num_keywords <- as.factor(datTrainp2$num_keywords)
 means <- datTrainp2 %>%
   group_by(num_keywords) %>%
@@ -222,27 +228,110 @@ means <- datTrainp2 %>%
 barplot(height=means$name, names=means$num_keywords)
 ```
 
+### Images vs Videos
+We can inspect possible relationships between the number of images and videos in an article. If some type of relationship is evident (e.g., articles with more images tend to have more videos), it may suggest some collinearity between these two variables.
+```{r graph4, message = FALSE}
+g <- ggplot(datTrain, aes(x = scale(num_videos), y = scale(num_imgs)))
+
+g + geom_point() + 
+    xlab("Number of videos (standardized)") + ylab("Number of images (standardized)") + 
+    geom_smooth() + 
+    theme_minimal()
+```
+
+### Positive vs negative word rates
+We can inspect the relationship between positive and negative word rates in articles. If some type of relationship is evident (e.g., articles with higher positive word rates tend to have lower negative word rates), it may suggest some collinearity between these two variables.
+
+```{r graph5, message = FALSE}
+g <- ggplot(datTrain, aes(x = scale(global_rate_positive_words), y = scale(global_rate_negative_words)))
+
+g + geom_point() + 
+    xlab("Positive word rate (standardized)") + ylab("Negative word rate (standardized)") + 
+    geom_smooth() + 
+    theme_minimal()
+```
+
+### Title subjectivity by day of week
+We can inspect the relationship between title subjectivity and the day of the week to see if certain days tend to have more/less subjective article titles.
+
+```{r graph6, message = FALSE}
+g <- ggplot(datTrain, aes(x = day, y = title_subjectivity))
+
+g + geom_bar(stat = "summary", fun = "mean", color = "black", fill = "blue") + 
+    xlab("Day") + ylab("Title subjectivity") +
+    theme_minimal()
+```
+
 ### Insert additional graphs here
 
 # Modeling
 
-insert short but thorough explanation of linear regression here.
+Linear regression is an analysis method wherein the values of a variable (i.e., response variable) is predicted based upon the value of one more more other variables (i.e., predictor variables). There is an underlying assumption that there is a linear relationship between the response variable and any given predictor. The slope of this line is determined mathematically by minimizing the sum of the squared residuals. 
 
 ## Linear Models
 
 This first model will explore the impact of images as combined with number of 
 key words, title subjectivity, sentiment polarity, and positive word rate.
-```{r, echo=TRUE}
+```{r lm_1}
 mod2 <- lm(shares~num_imgs+num_keywords+title_subjectivity+global_subjectivity+
              global_sentiment_polarity + global_rate_positive_words,
               data=datTrain)
 summary(mod2)
+
+###Added section below for automation demonstration###
+mod2.demo <- train(shares~num_imgs+num_keywords+title_subjectivity+global_subjectivity+
+             global_sentiment_polarity + global_rate_positive_words,
+             data = datTrain,
+             method = "lm",
+             preProcess = c("center", "scale"), 
+             trControl = trainControl(method = "cv", number = 5))
+
+#Run on test data
+mod2.predict <- predict(mod2.demo, newdata= datTest)
+
+#Obtain RMSE from test set, which will be used in automated comparison
+mod2.compare <- postResample(mod2.predict, obs = datTest$shares)
 ```
- 
+
+The second model explores the impact of videos instead of images. Keywords are retained as a variable. Instead of exploring subjectivity and postive word rates, this model explores the "negative" (i.e., global rate of negative words and maximum polarity of negative words). It also includes an interaction between the number of videos and number of keywords.
+```{r lm_2}
+#Train model
+mod3 <- train(shares ~ num_videos + num_keywords + num_videos:num_keywords + global_rate_negative_words + max_negative_polarity,
+              data = datTrain,
+              method = "lm",
+              preProcess = c("center", "scale"), 
+              trControl = trainControl(method = "cv", number = 5))
+
+#Run on test data
+mod3.predict <- predict(mod3, newdata = datTest)
+
+#Obtain RMSE from test set, which will be used in automated comparison
+mod3.compare <- postResample(mod3.predict, obs = datTest$shares)
+
+```
+
+
 ## Ensemble Models
 
 ### Random Forest Model
-Insert random forest model here
+Random forests are similar to bagging in the sense that multiple trees (i.e., a "forest") are created from bootstrap samples of data, with the outcome of these trees averaged to form a conclusion. Unlike bagging, not all possible predictors are used in each tree when using a random forest- only a random subset is used for each tree. This in turn makes the trees less correlated with one another, which allows for a greater reduction in variation once trees are averaged.
+
+Below is a random forest model to predict shares:
+```{r random_forest}
+#Create model
+random.forest.fit <- train(shares ~ ., data = datTrain,
+                           method = "rf",
+                           preProcess = c("center", "scale"),
+                           trControl = trainControl(method = "cv", number = 5),
+                           tuneGrid = data.frame(mtry = 1:17))
+
+#Run on test data
+random.forest.predict <- predict(random.forest.fit, newdata = datTest)
+
+#Obtain RMSE from test set, which will be used in automated comparison
+random.forest.compare <- postResample(random.forest.predict, obs = datTest$shares)
+```
+
 
 ### Boosted Tree Model  
 Boosting is a general approach that can be applied to trees and allows for the 
@@ -253,7 +342,7 @@ the errors in the trees previously created. Lambda represents a shrinkage
 parameter than slows the fitting process.
 
 Below is a boosted tree model to predict shares.
-```{r, echo=TRUE}
+```{r boosted_tree}
 # this is regression, not classification
 #removing previously created day variable for boosted tree model
 datTrain <- datTrain[,-19]
@@ -281,17 +370,46 @@ test_y <- as.integer(test_y)
 pred_y <- as.integer(pred_y)
 plot(x_ax, test_y, col="blue", pch=20, cex=.9)
 lines(x_ax, pred_y, col="red", pch=20, cex=.9)
+
+######Below added to demonstrate my concept for automated model comparison######
+
+#Run on test data
+boostFit.predict <- predict(boostFit, newdata = datTest)
+
+#Obtain RMSE from test set, which will be used in automated comparison
+boostFit.compare <- postResample(boostFit.predict, obs = datTest$shares)
 ```
 Here, the red lines are the predicted values for each observation.  If the red
-lines are close to following the blue dots (which are reperesentative of the
+lines are close to following the blue dots (which are representative of the
 actual value for each observation), then the model is closely predicting.
 
 
-Comparison
-All four of the models should be compared on the test set and a winner declared 
-(this should be automated to be correct across all the created documents).
-This can be done by one group member and the automation done by the other 
-(see below).
+## Comparison
+
+Now, grab all the RMSEs obtained from fitting the 4 models on the test set to determine the "winner."
+
+```{r comparison}
+#Compile RMSEs from the 4 models
+mod2.RMSE <- mod2.compare[1]
+mod3.RMSE <- mod3.compare[1]
+random.forest.RMSE <- random.forest.compare[1]
+boostFit.RMSE <- boostFit.compare[1]
+
+compare.all <- data.frame(
+                    model = c("mod2", "mod3", "random.forest", "boostFit"),
+                    RMSE = c(mod2.RMSE, mod3.RMSE, random.forest.RMSE, boostFit.RMSE)
+)
+
+winner <- compare.all %>% slice_min(order_by = RMSE)
+```
+
+The lowest RMSE obtained on the test set was **`r winner[1,2]`**, which belongs to the **`r winner[1,1]`** model. Therefore, **`r winner[1,1]`** is the winner!
+
+The final standings of all 4 models can be seen below:
+
+```{r final_standings}
+compare.all %>% arrange(RMSE) %>% mutate(Final.Rank = rank(RMSE))
+```
 
 Automation
 Once you’ve completed the above for a particular data channel, adapt the code 
