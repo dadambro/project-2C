@@ -1,7 +1,7 @@
 ---
 title: "Project 2"
 author: "Grace Holliday and Damon D'Ambrosio"
-date: "2023-07-02"
+date: "2023-07-03"
 output: html_document
 ---
 
@@ -48,7 +48,7 @@ dattype <- dattype[,-c(4:9)]
 # Summarizations  
 
 First, we will produce basic summary statistics and plots about the training 
-data.  To do this, we first need to divide the data into a training and test 
+data. To do this, we first need to divide the data into a training and test 
 set.  
 ```{r data_setup}
 # First, establishing every categorical variable as a character
@@ -188,9 +188,20 @@ datTrain %>%
   group_by(day) %>%
   summarise_at(vars(shares), list(name = mean))
 ```
-This summarization reveals the average number of shares by day of the week
+This summary reveals the average number of shares by day of the week
 (Days 1-7, Mon-Sun).  The highest average represents the day with the most
 shares.  A day of 0 means no day was specified.
+
+### Total Multimedia (Images and Videos) by Day
+```{r summary2}
+datTrain %>% group_by(day) %>%
+  mutate(total.media = num_imgs + num_videos) %>%
+    group_by(day) %>%
+      summarize(average = mean(total.media), median = median(total.media), min = min(total.media), max = max(total.media),
+                sd =   sd(total.media))
+```
+
+This summary provides the mean, median, minimum, maximum, and standard deviation of the total multimedia objects (images + videos) appearing in articles by day. Potential trends in this summary (e.g., if articles published on certain day have more multimedia objects), may indicate some type of collinearity between "day" and the "num_imgs" or "num_videos" variables.
 
 ### Insert additional summaries here
 
@@ -313,8 +324,19 @@ mod3.compare <- postResample(mod3.predict, obs = datTest$shares)
 
 ## Ensemble Models
 
+To streamline model fitting, we will first remove the previously created "day" variable.
+
+```{r remove_days}
+# this is regression, not classification
+#removing previously created day variable for boosted tree model
+datTrain <- datTrain[,-19]
+datTest <- datTest[,-19]
+```
+
+Now to fit the ensemble models.
+
 ### Random Forest Model
-Random forests are similar to bagging in the sense that multiple trees (i.e., a "forest") are created from bootstrap samples of data, with the outcome of these trees averaged to form a conclusion. Unlike bagging, not all possible predictors are used in each tree when using a random forest- only a random subset is used for each tree. This in turn makes the trees less correlated with one another, which allows for a greater reduction in variation once trees are averaged.
+Random forests are similar to bagging in the sense that multiple trees (i.e., a "forest") are created from bootstrap samples of data, with the outcome of these trees averaged to form a conclusion. Unlike bagging, not all possible predictors are used in each tree when using a random forest- only a random subset is used for each tree. This in turn makes the trees less correlated with one another, which allows for a greater reduction in variation once the outcomes of all trees are averaged.
 
 Below is a random forest model to predict shares:
 ```{r random_forest}
@@ -324,6 +346,22 @@ random.forest.fit <- train(shares ~ ., data = datTrain,
                            preProcess = c("center", "scale"),
                            trControl = trainControl(method = "cv", number = 5),
                            tuneGrid = data.frame(mtry = 1:17))
+
+# plot fit
+plot(random.forest.fit)
+random.forest.fit$finalModel
+
+# test fit
+test_x = datTest[, -18] 
+test_y = datTest[, 18] 
+pred_y = predict(random.forest.fit, test_x)
+x_ax = 1:length(pred_y)
+x_ax <- as.numeric(x_ax)
+test_y <- test_y$shares 
+test_y <- as.integer(test_y)
+pred_y <- as.integer(pred_y)
+plot(x_ax, test_y, col="blue", pch=20, cex=.9)
+lines(x_ax, pred_y, col="red", pch=20, cex=.9)
 
 #Run on test data
 random.forest.predict <- predict(random.forest.fit, newdata = datTest)
@@ -343,10 +381,6 @@ parameter than slows the fitting process.
 
 Below is a boosted tree model to predict shares.
 ```{r boosted_tree}
-# this is regression, not classification
-#removing previously created day variable for boosted tree model
-datTrain <- datTrain[,-19]
-datTest <- datTest[,-19]
 boostFit <- train(shares~., data=datTrain, method="gbm",
                       preProcess=c("center","scale"),
                       trControl=trainControl(method='cv',number=5),
