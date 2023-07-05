@@ -2,7 +2,7 @@
 title: "Project 2"
 author: "Grace Holliday and Damon D'Ambrosio"
 date: "2023-07-03"
-output: html_document
+output: github_document
 params: 
   datachannel:
     label: 'Data Channel'
