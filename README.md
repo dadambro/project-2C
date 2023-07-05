@@ -45,7 +45,7 @@ channels <- c("data_channel_is_lifestyle","data_channel_is_entertainment",
 
 for(i in 1:6)
 {rmarkdown::render("project2.rmd",
-                  output_format="html_document",
+                  output_format="github_document",
                   params=list(datachannel=channels[i]),
                   output_file = channels[i])
 }
