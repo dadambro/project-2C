@@ -330,7 +330,7 @@ This first model will explore the impact of images as combined with number of
 key words, title subjectivity, sentiment polarity, and positive word rate.
 ```{r lm_1}
 #Train model
-mod2 <- train(shares ~ num_imgs+num_keywords+title_subjectivity+
+LinearModel1 <- train(shares ~ num_imgs+num_keywords+title_subjectivity+
                 global_subjectivity+global_sentiment_polarity +
                 global_rate_positive_words,
               data = datTrain,
@@ -338,13 +338,13 @@ mod2 <- train(shares ~ num_imgs+num_keywords+title_subjectivity+
               preProcess = c("center", "scale"), 
               trControl = trainControl(method = "cv", number = 5))
 
-summary(mod2)
+summary(LinearModel1)
 
 #Run on test data
-mod2.predict <- predict(mod2, newdata = datTest)
+LinearModel1.predict <- predict(LinearModel1, newdata = datTest)
 
 #Obtain RMSE from test set, which will be used in automated comparison
-mod2.compare <- postResample(mod2.predict, obs = datTest$shares)
+LinearModel1.compare <- postResample(LinearModel1.predict, obs = datTest$shares)
 ```
 
 The second model explores the impact of videos instead of images. Keywords are 
@@ -354,17 +354,18 @@ and maximum polarity of negative words). It also includes an interaction
 between the number of videos and number of keywords.
 ```{r lm_2}
 #Train model
-mod3 <- train(shares ~ num_videos + num_keywords + num_videos:num_keywords + global_rate_negative_words + max_negative_polarity,
+LinearModel2 <- train(shares ~ num_videos + num_keywords + 
+                 num_videos:num_keywords + global_rate_negative_words +                                     max_negative_polarity,
               data = datTrain,
               method = "lm",
               preProcess = c("center", "scale"), 
               trControl = trainControl(method = "cv", number = 5))
 
 #Run on test data
-mod3.predict <- predict(mod3, newdata = datTest)
+LinearModel2.predict <- predict(LinearModel2, newdata = datTest)
 
 #Obtain RMSE from test set, which will be used in automated comparison
-mod3.compare <- postResample(mod3.predict, obs = datTest$shares)
+LinearModel2.compare <- postResample(LinearModel2.predict, obs = datTest$shares)
 
 ```
 
@@ -438,7 +439,7 @@ the errors in the trees previously created. Lambda represents a shrinkage
 parameter than slows the fitting process.
 
 Below is a boosted tree model to predict shares.
-```{r boosted_tree}
+```{r boosted_tree, results="hide"}
 boostFit <- train(shares~., data=datTrain, method="gbm",
                       preProcess=c("center","scale"),
                       trControl=trainControl(method='cv',number=5),
@@ -446,7 +447,9 @@ boostFit <- train(shares~., data=datTrain, method="gbm",
                                              interaction.depth=seq(1,4,1),
                                              shrinkage=0.1,
                                              n.minobsinnode=10))
+```
 
+```{r boostfit plots}
 # plot fit
 plot(boostFit)
 boostFit$finalModel
@@ -481,15 +484,16 @@ determine the "winner."
 
 ```{r comparison}
 #Compile RMSEs from the 4 models
-mod2.RMSE <- mod2.compare[1]
-mod3.RMSE <- mod3.compare[1]
+LinearModel1.RMSE <- LinearModel1.compare[1]
+LinearModel2.RMSE <- LinearModel2.compare[1]
 random.forest.RMSE <- random.forest.compare[1]
 boostFit.RMSE <- boostFit.compare[1]
 
 compare.all <- data.frame(
-                    model = c("mod2", "mod3", "random.forest", "boostFit"),
-                    RMSE = c(mod2.RMSE, mod3.RMSE, random.forest.RMSE, boostFit.RMSE)
-)
+                    model = c("LinearModel1", "LinearModel2", "random.forest", 
+                              "boostFit"),
+                    RMSE = c(LinearModel1.RMSE, LinearModel2.RMSE, 
+                             random.forest.RMSE, boostFit.RMSE))
 
 winner <- compare.all %>% slice_min(order_by = RMSE)
 ```
@@ -503,21 +507,3 @@ The final standings of all 4 models can be seen below:
 compare.all %>% arrange(RMSE) %>% mutate(Final.Rank = rank(RMSE))
 ```
 
-Automation
-Below is the code (also found in the file render_w_automation.R) that is used to 
-automate production of the six data channel html documents.  This is run in the 
-command line and produces the six separate reports.
-```{r Automation, eval=FALSE}
-channels <- c("data_channel_is_lifestyle","data_channel_is_entertainment",
-    "data_channel_is_bus",
-    "data_channel_is_socmed",
-    "data_channel_is_tech",
-    "data_channel_is_world")
-
-for(i in 1:6)
-{rmarkdown::render("project2.rmd",
-                  output_format="html_document",
-                  params=list(datachannel=channels[i]),
-                  output_file = channels[i])
-}
-```

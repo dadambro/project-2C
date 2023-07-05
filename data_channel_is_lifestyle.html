@@ -695,7 +695,7 @@ residuals.</p>
 number of key words, title subjectivity, sentiment polarity, and
 positive word rate.</p>
 <pre class="r"><code>#Train model
-mod2 &lt;- train(shares ~ num_imgs+num_keywords+title_subjectivity+
+LinearModel1 &lt;- train(shares ~ num_imgs+num_keywords+title_subjectivity+
                 global_subjectivity+global_sentiment_polarity +
                 global_rate_positive_words,
               data = datTrain,
@@ -703,7 +703,7 @@ mod2 &lt;- train(shares ~ num_imgs+num_keywords+title_subjectivity+
               preProcess = c(&quot;center&quot;, &quot;scale&quot;), 
               trControl = trainControl(method = &quot;cv&quot;, number = 5))
 
-summary(mod2)</code></pre>
+summary(LinearModel1)</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = .outcome ~ ., data = dat)
@@ -728,10 +728,10 @@ summary(mod2)</code></pre>
 ## Multiple R-squared:  0.004321,   Adjusted R-squared:  0.0002347 
 ## F-statistic: 1.057 on 6 and 1462 DF,  p-value: 0.3862</code></pre>
 <pre class="r"><code>#Run on test data
-mod2.predict &lt;- predict(mod2, newdata = datTest)
+LinearModel1.predict &lt;- predict(LinearModel1, newdata = datTest)
 
 #Obtain RMSE from test set, which will be used in automated comparison
-mod2.compare &lt;- postResample(mod2.predict, obs = datTest$shares)</code></pre>
+LinearModel1.compare &lt;- postResample(LinearModel1.predict, obs = datTest$shares)</code></pre>
 <p>The second model explores the impact of videos instead of images.
 Keywords are retained as a variable. Instead of exploring subjectivity
 and postive word rates, this model explores the “negative” (i.e., global
@@ -739,17 +739,18 @@ rate of negative words and maximum polarity of negative words). It also
 includes an interaction between the number of videos and number of
 keywords.</p>
 <pre class="r"><code>#Train model
-mod3 &lt;- train(shares ~ num_videos + num_keywords + num_videos:num_keywords + global_rate_negative_words + max_negative_polarity,
+LinearModel2 &lt;- train(shares ~ num_videos + num_keywords + 
+                 num_videos:num_keywords + global_rate_negative_words +                                     max_negative_polarity,
               data = datTrain,
               method = &quot;lm&quot;,
               preProcess = c(&quot;center&quot;, &quot;scale&quot;), 
               trControl = trainControl(method = &quot;cv&quot;, number = 5))
 
 #Run on test data
-mod3.predict &lt;- predict(mod3, newdata = datTest)
+LinearModel2.predict &lt;- predict(LinearModel2, newdata = datTest)
 
 #Obtain RMSE from test set, which will be used in automated comparison
-mod3.compare &lt;- postResample(mod3.predict, obs = datTest$shares)</code></pre>
+LinearModel2.compare &lt;- postResample(LinearModel2.predict, obs = datTest$shares)</code></pre>
 </div>
 <div id="ensemble-models" class="section level2">
 <h2>Ensemble Models</h2>
@@ -831,439 +832,6 @@ the fitting process.</p>
                                              interaction.depth=seq(1,4,1),
                                              shrinkage=0.1,
                                              n.minobsinnode=10))</code></pre>
-<pre><code>## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 119385918.4568             nan     0.1000 -82047.8845
-##      2 119300523.6377             nan     0.1000 54316.6315
-##      3 119227293.0598             nan     0.1000 -108462.8156
-##      4 118748652.9207             nan     0.1000 -78358.5340
-##      5 118454577.3685             nan     0.1000 -69854.5674
-##      6 118376138.3634             nan     0.1000 -50811.0026
-##      7 118314433.0929             nan     0.1000 -51631.7383
-##      8 118352000.3323             nan     0.1000 -195835.1682
-##      9 118349309.9376             nan     0.1000 -175618.7591
-##     10 118071540.3166             nan     0.1000 -149315.6369
-##     20 117340135.4180             nan     0.1000 -291097.7613
-##     40 116649193.0235             nan     0.1000 -233335.0359
-##     60 116345990.8305             nan     0.1000 -278236.9522
-##     80 115806715.8740             nan     0.1000 -326490.7823
-##    100 115246732.0102             nan     0.1000 -307954.2673
-##    120 115049307.7273             nan     0.1000 -219177.2261
-##    140 114973790.1751             nan     0.1000 -518540.2975
-##    160 114713389.9561             nan     0.1000 -425399.8608
-##    175 114513221.0726             nan     0.1000 -157559.3990
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 119320349.8099             nan     0.1000 665175.3367
-##      2 118508066.5304             nan     0.1000 -54703.2659
-##      3 117857291.1707             nan     0.1000 -22430.1678
-##      4 117409380.2561             nan     0.1000 -339042.3343
-##      5 117261696.4310             nan     0.1000 -106152.3281
-##      6 116833612.6016             nan     0.1000 -6462.5003
-##      7 116696977.0088             nan     0.1000 -191382.9397
-##      8 116026685.2622             nan     0.1000 -184879.3578
-##      9 115452324.7190             nan     0.1000 -207360.1182
-##     10 115072191.1985             nan     0.1000 -185562.4351
-##     20 114045721.5982             nan     0.1000 -60006.4403
-##     40 111328370.6264             nan     0.1000 -374050.2344
-##     60 109390095.4311             nan     0.1000 -651461.2257
-##     80 106822911.4225             nan     0.1000 -375238.9999
-##    100 106077324.7128             nan     0.1000 -239642.0940
-##    120 103452177.4331             nan     0.1000 -473636.5048
-##    140 101693602.1818             nan     0.1000 -244790.9520
-##    160 100117045.9318             nan     0.1000 -293888.6411
-##    175 98602051.5269             nan     0.1000 -266238.6007
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 118795565.9225             nan     0.1000 54723.8944
-##      2 118182267.6741             nan     0.1000 -96900.4614
-##      3 117605922.7271             nan     0.1000 -437767.8875
-##      4 116436791.2378             nan     0.1000 -310624.5471
-##      5 116099434.4758             nan     0.1000 -112896.5989
-##      6 115615668.5284             nan     0.1000 -86162.5838
-##      7 115103691.1542             nan     0.1000 -261294.3835
-##      8 114321663.8809             nan     0.1000 -330569.1101
-##      9 113766825.8784             nan     0.1000 -255244.1185
-##     10 113580528.5459             nan     0.1000 -211680.8250
-##     20 110770851.5628             nan     0.1000 -433615.2889
-##     40 102862368.3976             nan     0.1000 -276809.1989
-##     60 97172042.3925             nan     0.1000 -300412.0272
-##     80 90979081.0374             nan     0.1000 -209858.4587
-##    100 86587173.4713             nan     0.1000 -681836.3446
-##    120 83427946.8437             nan     0.1000 -406662.5346
-##    140 79880191.7804             nan     0.1000 -90813.6508
-##    160 77889274.6489             nan     0.1000 -318825.9530
-##    175 75417657.0258             nan     0.1000 -534935.1384
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 118656588.0477             nan     0.1000 469109.0862
-##      2 117678703.8212             nan     0.1000 -156399.6649
-##      3 116606906.7577             nan     0.1000 -261716.6990
-##      4 115961065.4082             nan     0.1000 -38435.0413
-##      5 115894065.2646             nan     0.1000 -179344.1759
-##      6 115236298.6906             nan     0.1000 -314016.0400
-##      7 114864674.0221             nan     0.1000 -320857.1562
-##      8 113997674.0298             nan     0.1000 -406355.9079
-##      9 113650194.6490             nan     0.1000 -505796.3614
-##     10 112765224.7971             nan     0.1000 -545330.0088
-##     20 107342665.6114             nan     0.1000 -508409.7973
-##     40 101068303.9465             nan     0.1000 -730186.7132
-##     60 92911545.8507             nan     0.1000 -464468.0641
-##     80 89476699.5992             nan     0.1000 -420727.5543
-##    100 86288522.7616             nan     0.1000 -273203.0059
-##    120 83630258.1322             nan     0.1000 -615563.5743
-##    140 80315454.5659             nan     0.1000 -272967.5629
-##    160 77898959.7400             nan     0.1000 -565118.3117
-##    175 76509364.3434             nan     0.1000 -663147.3821
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 115722941.9301             nan     0.1000 -52939.2514
-##      2 115616185.4696             nan     0.1000 75437.6212
-##      3 115483808.8001             nan     0.1000 -16254.5217
-##      4 114834073.3255             nan     0.1000 188124.1743
-##      5 114426385.2708             nan     0.1000 -219524.9918
-##      6 114246351.2828             nan     0.1000 -161646.7962
-##      7 113970490.3399             nan     0.1000 -187605.9775
-##      8 113797637.6027             nan     0.1000 -346682.6849
-##      9 113716363.0968             nan     0.1000 -518673.6002
-##     10 113538769.0337             nan     0.1000 -117746.3022
-##     20 113138805.4169             nan     0.1000 -113066.7003
-##     40 112725322.4771             nan     0.1000 -109300.9049
-##     60 112181365.2596             nan     0.1000 -163549.8030
-##     80 111622176.6281             nan     0.1000 -194750.5230
-##    100 111490349.9837             nan     0.1000 -525098.4620
-##    120 111096337.1556             nan     0.1000 12724.3280
-##    140 110918952.6638             nan     0.1000 -270398.4650
-##    160 110702748.4932             nan     0.1000 -93794.0125
-##    175 110671257.6260             nan     0.1000 -324453.8974
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 115211461.8943             nan     0.1000 -258014.6521
-##      2 115136066.3081             nan     0.1000 -189160.4578
-##      3 114406049.1982             nan     0.1000 142386.2879
-##      4 113673912.0849             nan     0.1000 -24210.4115
-##      5 113573207.6398             nan     0.1000 -147336.8574
-##      6 113023667.4055             nan     0.1000 -256007.4227
-##      7 112947550.6853             nan     0.1000 -152891.6243
-##      8 112563879.9511             nan     0.1000 -381341.6309
-##      9 112295560.3395             nan     0.1000 -262581.6761
-##     10 112320026.2401             nan     0.1000 -359349.2540
-##     20 110322564.8712             nan     0.1000 -328819.3882
-##     40 107571007.5769             nan     0.1000 -238711.4509
-##     60 104844451.5015             nan     0.1000 -190129.5753
-##     80 100921908.2699             nan     0.1000 -524408.9236
-##    100 98430429.0182             nan     0.1000 -424439.2636
-##    120 97179154.1131             nan     0.1000 -530918.8619
-##    140 93910192.9473             nan     0.1000 -639425.4627
-##    160 92874373.9609             nan     0.1000 -176253.9060
-##    175 91799161.5931             nan     0.1000 -224733.7427
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 115632015.8720             nan     0.1000 -75279.4056
-##      2 114349402.8630             nan     0.1000 -145774.3677
-##      3 113820349.3257             nan     0.1000 -336728.4889
-##      4 112997969.8375             nan     0.1000 -9571.0045
-##      5 112556970.8439             nan     0.1000 -295077.5665
-##      6 112034259.3514             nan     0.1000 -138024.0687
-##      7 111568329.5781             nan     0.1000 -336235.9499
-##      8 111108979.6025             nan     0.1000 -338037.4026
-##      9 110086501.6199             nan     0.1000 -274698.0373
-##     10 109783594.9969             nan     0.1000 -223847.3658
-##     20 106690132.9712             nan     0.1000 -145110.5990
-##     40 102668718.4483             nan     0.1000 -477009.0931
-##     60 97751273.1739             nan     0.1000 -432724.5648
-##     80 94271211.7353             nan     0.1000 -436657.5325
-##    100 92328084.3630             nan     0.1000 -477427.5802
-##    120 88735770.4017             nan     0.1000 -80276.8494
-##    140 83991300.3725             nan     0.1000 -370234.2183
-##    160 80235096.4226             nan     0.1000 -217607.1337
-##    175 77267053.7937             nan     0.1000 -262622.3792
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 114925061.1260             nan     0.1000 -284874.1937
-##      2 114543534.7723             nan     0.1000 -470636.1282
-##      3 114039869.8037             nan     0.1000 -288839.7312
-##      4 112877501.1467             nan     0.1000 -246855.1517
-##      5 112234334.5935             nan     0.1000 -194638.6832
-##      6 111543948.4887             nan     0.1000 -394242.6259
-##      7 110752080.1847             nan     0.1000 -158867.1036
-##      8 110262548.8806             nan     0.1000 -260219.6252
-##      9 110020738.0990             nan     0.1000 -668135.0792
-##     10 109196656.0524             nan     0.1000 -733180.3597
-##     20 105429670.4420             nan     0.1000 -1269559.4171
-##     40 97450733.8281             nan     0.1000 -349199.7684
-##     60 89446855.5715             nan     0.1000 -337420.2275
-##     80 84755813.9626             nan     0.1000 -521072.1149
-##    100 80899000.4597             nan     0.1000 379225.4562
-##    120 76674227.5341             nan     0.1000 414491.9704
-##    140 73249576.8178             nan     0.1000 -497604.7774
-##    160 70167957.0002             nan     0.1000 -335388.1579
-##    175 67873209.8435             nan     0.1000 -527799.6214
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 54817174.2908             nan     0.1000 -9484.1029
-##      2 54715616.9236             nan     0.1000 -70484.6634
-##      3 54600165.3109             nan     0.1000 92694.2581
-##      4 54508759.1434             nan     0.1000 -47798.8471
-##      5 54472859.8836             nan     0.1000 -1155.9249
-##      6 54407225.2923             nan     0.1000 -34932.1588
-##      7 54348194.9774             nan     0.1000 2675.0369
-##      8 54287174.8634             nan     0.1000 10413.5464
-##      9 54270897.2968             nan     0.1000 -56618.0160
-##     10 54212355.5672             nan     0.1000 3478.4836
-##     20 53803629.7229             nan     0.1000 -126230.4727
-##     40 53158172.3787             nan     0.1000 -46172.4008
-##     60 52785013.3571             nan     0.1000 -15336.2220
-##     80 52524666.6115             nan     0.1000 -31183.3606
-##    100 52314061.9481             nan     0.1000 -39199.0097
-##    120 52075687.7682             nan     0.1000 -92690.2911
-##    140 51761349.0609             nan     0.1000 -58385.6450
-##    160 51502115.3434             nan     0.1000 -6073.5221
-##    175 51256443.5931             nan     0.1000 8133.9902
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 54716495.5804             nan     0.1000 -45623.0980
-##      2 54380664.2164             nan     0.1000 -202277.1601
-##      3 54125384.2684             nan     0.1000 -123638.5002
-##      4 54018517.2935             nan     0.1000 35138.0225
-##      5 53920525.0544             nan     0.1000   20.2138
-##      6 53775827.8364             nan     0.1000 -7486.5678
-##      7 53673226.6612             nan     0.1000 17940.7212
-##      8 53518123.0366             nan     0.1000 -219776.3306
-##      9 53408285.2046             nan     0.1000  438.4106
-##     10 53273382.7991             nan     0.1000 -56480.4780
-##     20 51708347.2973             nan     0.1000 -15741.6940
-##     40 49723741.0445             nan     0.1000 -167999.1963
-##     60 47783267.7089             nan     0.1000 -67977.8644
-##     80 46166457.4011             nan     0.1000 -151519.2002
-##    100 45096543.2072             nan     0.1000 -137389.2725
-##    120 44170249.5550             nan     0.1000 -98350.5386
-##    140 43171129.2806             nan     0.1000 -50232.8421
-##    160 42229422.1542             nan     0.1000 -171192.2878
-##    175 41168511.6229             nan     0.1000 -93392.8993
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 54423738.2743             nan     0.1000 -271360.9606
-##      2 54056364.5969             nan     0.1000 -116182.0941
-##      3 53874724.3190             nan     0.1000 -97156.0361
-##      4 53618104.6041             nan     0.1000 -1748.4655
-##      5 53263552.8875             nan     0.1000 -113373.7079
-##      6 53090558.0462             nan     0.1000 18522.4481
-##      7 52836625.3995             nan     0.1000 -52979.8152
-##      8 52212912.9760             nan     0.1000 -159793.1756
-##      9 51982489.4549             nan     0.1000 106022.5116
-##     10 51826694.7685             nan     0.1000 13195.9948
-##     20 49496738.3311             nan     0.1000 -118931.9794
-##     40 46060177.5803             nan     0.1000 -105667.0177
-##     60 43324807.6589             nan     0.1000 -128705.2412
-##     80 41558863.2606             nan     0.1000 -107703.1996
-##    100 39244763.4990             nan     0.1000 -113086.1938
-##    120 37227675.8967             nan     0.1000 -64546.7622
-##    140 35560619.0769             nan     0.1000 -52641.7495
-##    160 33989247.1671             nan     0.1000 -173559.6335
-##    175 33100447.8301             nan     0.1000 -115961.0898
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 54614360.0469             nan     0.1000 64473.4756
-##      2 54213119.4940             nan     0.1000 -41062.5242
-##      3 54001565.3245             nan     0.1000 23686.6243
-##      4 53746519.1385             nan     0.1000 -70782.2142
-##      5 53024613.4771             nan     0.1000 72426.2969
-##      6 52362030.2772             nan     0.1000 25136.3618
-##      7 51936141.2744             nan     0.1000 -313878.3180
-##      8 51769947.5608             nan     0.1000 -8871.7321
-##      9 51411914.6176             nan     0.1000 -163794.4042
-##     10 50980830.0228             nan     0.1000 -230309.8066
-##     20 48514002.1170             nan     0.1000 -391664.1360
-##     40 44594680.4407             nan     0.1000 -51746.5142
-##     60 41213244.7655             nan     0.1000 -225282.6110
-##     80 38318694.3018             nan     0.1000 -137071.7991
-##    100 35979179.1652             nan     0.1000 -89819.4919
-##    120 34141588.2568             nan     0.1000 -96775.1564
-##    140 31889619.8401             nan     0.1000 -40501.3351
-##    160 30120735.2783             nan     0.1000 -218429.2468
-##    175 28695952.7392             nan     0.1000 -262516.9804
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 96987511.2315             nan     0.1000 -14021.7934
-##      2 96307072.8828             nan     0.1000 132082.3723
-##      3 95833492.0073             nan     0.1000 -57195.8543
-##      4 95370806.8043             nan     0.1000 -276590.1379
-##      5 95276592.7136             nan     0.1000 -31674.5222
-##      6 95090235.1609             nan     0.1000 -14709.5810
-##      7 94940639.4607             nan     0.1000 -143740.6780
-##      8 95024735.1827             nan     0.1000 -322177.7760
-##      9 94885634.6014             nan     0.1000 -208617.5694
-##     10 94674872.2838             nan     0.1000 48956.0148
-##     20 93940744.1083             nan     0.1000 -293086.4214
-##     40 93492608.6831             nan     0.1000 -106548.5113
-##     60 93416390.9937             nan     0.1000 -358592.6790
-##     80 93233353.6859             nan     0.1000 -43188.0249
-##    100 93247256.4027             nan     0.1000 -137237.5242
-##    120 93026555.6554             nan     0.1000 -392099.2854
-##    140 93129857.1387             nan     0.1000 -315462.3537
-##    160 93122590.4050             nan     0.1000 -493930.5504
-##    175 92696571.9016             nan     0.1000 -307183.6426
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 96913437.8186             nan     0.1000 180592.0613
-##      2 96334445.4106             nan     0.1000 -287339.7835
-##      3 95531910.2510             nan     0.1000 168618.6561
-##      4 94881789.9322             nan     0.1000 89298.5491
-##      5 94095970.8656             nan     0.1000 53643.5031
-##      6 93591522.7942             nan     0.1000 -158369.2931
-##      7 93063929.4499             nan     0.1000 -330191.8822
-##      8 92805056.3891             nan     0.1000 -157859.8745
-##      9 92533728.5759             nan     0.1000 -361812.8450
-##     10 92434882.6772             nan     0.1000 -78308.3566
-##     20 91963459.0836             nan     0.1000 -404911.5939
-##     40 89336018.1025             nan     0.1000 -133905.1194
-##     60 86418070.3912             nan     0.1000 -365383.3294
-##     80 85878736.9591             nan     0.1000 -143550.9589
-##    100 83419558.9605             nan     0.1000 -343773.9326
-##    120 82613810.8819             nan     0.1000 -800580.7867
-##    140 79417844.3683             nan     0.1000 -219174.2752
-##    160 78576982.3886             nan     0.1000 -106600.4498
-##    175 78446302.6186             nan     0.1000 -627393.2267
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 97490710.6173             nan     0.1000 307885.6786
-##      2 96348610.7325             nan     0.1000 430105.3291
-##      3 96226850.2367             nan     0.1000 -144389.0777
-##      4 95993901.9647             nan     0.1000 -113311.7129
-##      5 95221173.0060             nan     0.1000 -89775.1476
-##      6 93927396.6946             nan     0.1000 206987.4108
-##      7 93136110.8154             nan     0.1000 -100356.4833
-##      8 92232177.9808             nan     0.1000 -175028.3631
-##      9 91766361.9916             nan     0.1000 -443947.4442
-##     10 91407922.6370             nan     0.1000 -20378.1609
-##     20 88138219.3247             nan     0.1000 -289976.0943
-##     40 83125931.1412             nan     0.1000 -365560.1265
-##     60 79835634.7293             nan     0.1000 -158102.3665
-##     80 77348406.8823             nan     0.1000 -248025.6558
-##    100 73400626.7928             nan     0.1000 -233555.8519
-##    120 71048590.4517             nan     0.1000 -183711.7888
-##    140 67162263.9379             nan     0.1000 -507284.9063
-##    160 65222231.3196             nan     0.1000 -334736.2927
-##    175 64082346.8678             nan     0.1000 -362303.7556
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 96156458.7879             nan     0.1000 485897.4387
-##      2 95223994.4206             nan     0.1000 -221281.9636
-##      3 94767632.2139             nan     0.1000 -160735.9796
-##      4 93521739.5060             nan     0.1000 -49364.4903
-##      5 92757344.8321             nan     0.1000 -91943.2012
-##      6 92006875.4624             nan     0.1000 -415178.3663
-##      7 91322409.4159             nan     0.1000 28173.6968
-##      8 90916730.6621             nan     0.1000 -321726.1185
-##      9 90750572.6905             nan     0.1000 -358989.0643
-##     10 89702185.7331             nan     0.1000 -348058.2646
-##     20 85894310.3617             nan     0.1000 -534030.6703
-##     40 80537065.5504             nan     0.1000 -393187.5829
-##     60 77467577.4080             nan     0.1000 -462257.7815
-##     80 74611644.6308             nan     0.1000 -501349.8480
-##    100 72358673.1491             nan     0.1000 -143519.9154
-##    120 69939663.7023             nan     0.1000 -341150.3084
-##    140 67311855.2198             nan     0.1000 -353844.6672
-##    160 64175851.0008             nan     0.1000 -551894.7909
-##    175 60683936.6156             nan     0.1000 -780250.4538
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 110739303.4660             nan     0.1000 -166493.7593
-##      2 110199455.5140             nan     0.1000 -174152.3913
-##      3 110046380.2069             nan     0.1000 39309.2066
-##      4 110022810.4686             nan     0.1000 -54746.1904
-##      5 109654842.4824             nan     0.1000 -341625.1863
-##      6 109425063.0525             nan     0.1000 -564174.0057
-##      7 109280224.0503             nan     0.1000 -490047.4936
-##      8 109361819.5126             nan     0.1000 -529774.2197
-##      9 109427499.5899             nan     0.1000 -394158.0267
-##     10 109275218.0054             nan     0.1000 -254161.7213
-##     20 108562725.4721             nan     0.1000 -174867.9359
-##     40 107918415.0462             nan     0.1000 -560901.4997
-##     60 107250951.1994             nan     0.1000 -131728.3524
-##     80 107035398.2761             nan     0.1000 -257229.3812
-##    100 106761232.7705             nan     0.1000 -45139.0144
-##    120 106589694.5447             nan     0.1000 -168276.9866
-##    140 106424551.9401             nan     0.1000 -124352.5450
-##    160 106212513.9842             nan     0.1000 -372819.7487
-##    175 106167267.1926             nan     0.1000 -734044.4354
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 111535624.0334             nan     0.1000 -87383.3738
-##      2 110732307.5092             nan     0.1000 -93191.8293
-##      3 110172111.6899             nan     0.1000 -368980.0184
-##      4 109596601.1973             nan     0.1000 -34728.5926
-##      5 108751573.3296             nan     0.1000 -75671.1372
-##      6 108385239.3760             nan     0.1000 -417368.3815
-##      7 107677605.9498             nan     0.1000 -166972.9232
-##      8 107379767.9790             nan     0.1000 -107585.6713
-##      9 107069793.2778             nan     0.1000 -725890.8117
-##     10 106961858.9209             nan     0.1000 -521283.9497
-##     20 105475617.8077             nan     0.1000 -226464.8153
-##     40 102902564.6468             nan     0.1000 -753447.2856
-##     60 100314009.6616             nan     0.1000 -256927.9097
-##     80 99385535.9138             nan     0.1000 -203674.8624
-##    100 97407525.7326             nan     0.1000 -344945.9952
-##    120 93898126.4623             nan     0.1000 -11610.2161
-##    140 92479677.2454             nan     0.1000 -295871.2186
-##    160 91882715.7257             nan     0.1000 -493521.1453
-##    175 91162218.3184             nan     0.1000 -416587.5743
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 111084512.4704             nan     0.1000 -45363.1934
-##      2 110195308.7746             nan     0.1000  289.5425
-##      3 109459395.7351             nan     0.1000 -136434.8831
-##      4 108509945.9179             nan     0.1000 -218664.3368
-##      5 108279027.5256             nan     0.1000 -106504.9283
-##      6 107270237.2625             nan     0.1000 -149626.4940
-##      7 107336413.6050             nan     0.1000 -380481.9239
-##      8 106867022.6583             nan     0.1000 -236442.9083
-##      9 106233381.1024             nan     0.1000 -415005.2224
-##     10 106187741.3917             nan     0.1000 -460211.3000
-##     20 101317416.5907             nan     0.1000 -310617.2832
-##     40 97026942.2692             nan     0.1000 -374598.2164
-##     60 90939823.4463             nan     0.1000 -561624.6329
-##     80 87151878.7743             nan     0.1000 -561182.5717
-##    100 83402036.4035             nan     0.1000 -191659.6971
-##    120 79295302.8221             nan     0.1000 -499633.3096
-##    140 77511957.4237             nan     0.1000 -748982.7100
-##    160 75387683.1821             nan     0.1000 -265003.8041
-##    175 73966288.1785             nan     0.1000 -327692.2775
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 110793125.1853             nan     0.1000 -321139.1380
-##      2 110663730.5506             nan     0.1000 -237249.8651
-##      3 110487466.4565             nan     0.1000 -170926.3421
-##      4 109766891.1051             nan     0.1000 -372358.1154
-##      5 109135123.1591             nan     0.1000 21746.5670
-##      6 108452551.5386             nan     0.1000 -302409.6866
-##      7 107668644.5382             nan     0.1000 -227237.5261
-##      8 106952840.3916             nan     0.1000 -110933.0158
-##      9 105752541.9230             nan     0.1000 -342737.1720
-##     10 104934963.7846             nan     0.1000 -654063.3763
-##     20 98090856.5942             nan     0.1000 -627258.5165
-##     40 93483016.5983             nan     0.1000 -732037.2722
-##     60 85100875.1024             nan     0.1000 -553003.6908
-##     80 79974271.9870             nan     0.1000 -246818.0489
-##    100 76325846.9985             nan     0.1000 -244985.5438
-##    120 73530212.4065             nan     0.1000 -321924.5212
-##    140 70379558.3613             nan     0.1000 -241790.2139
-##    160 65785716.3821             nan     0.1000 -174277.5352
-##    175 63631625.1797             nan     0.1000 -320588.5257
-## 
-## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-##      1 99978534.4365             nan     0.1000 -38255.7974
-##      2 99548022.7505             nan     0.1000 -869.6235
-##      3 99138114.4458             nan     0.1000 -5479.1378
-##      4 99011817.5703             nan     0.1000 35580.2316
-##      5 98726412.6888             nan     0.1000 -114515.4489
-##      6 98655292.4153             nan     0.1000 23374.6382
-##      7 98599127.3018             nan     0.1000 25668.4420
-##      8 98382971.9968             nan     0.1000 -198447.7414
-##      9 98236955.8350             nan     0.1000 -287574.7819
-##     10 98141869.9022             nan     0.1000 -201868.3074
-##     20 97975670.9444             nan     0.1000 -213069.7235
-##     25 97937652.7354             nan     0.1000 -324710.6599</code></pre>
 <pre class="r"><code># plot fit
 plot(boostFit)</code></pre>
 <p><img src="data:image/png;base64,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" width="672" /></p>
@@ -1299,15 +867,16 @@ is closely predicting.</p>
 <p>Now, grab all the RMSEs obtained from fitting the 4 models on the
 test set to determine the “winner.”</p>
 <pre class="r"><code>#Compile RMSEs from the 4 models
-mod2.RMSE &lt;- mod2.compare[1]
-mod3.RMSE &lt;- mod3.compare[1]
+LinearModel1.RMSE &lt;- LinearModel1.compare[1]
+LinearModel2.RMSE &lt;- LinearModel2.compare[1]
 random.forest.RMSE &lt;- random.forest.compare[1]
 boostFit.RMSE &lt;- boostFit.compare[1]
 
 compare.all &lt;- data.frame(
-                    model = c(&quot;mod2&quot;, &quot;mod3&quot;, &quot;random.forest&quot;, &quot;boostFit&quot;),
-                    RMSE = c(mod2.RMSE, mod3.RMSE, random.forest.RMSE, boostFit.RMSE)
-)
+                    model = c(&quot;LinearModel1&quot;, &quot;LinearModel2&quot;, &quot;random.forest&quot;, 
+                              &quot;boostFit&quot;),
+                    RMSE = c(LinearModel1.RMSE, LinearModel2.RMSE, 
+                             random.forest.RMSE, boostFit.RMSE))
 
 winner &lt;- compare.all %&gt;% slice_min(order_by = RMSE)</code></pre>
 <p>The lowest RMSE obtained on the test set was
@@ -1318,25 +887,9 @@ winner &lt;- compare.all %&gt;% slice_min(order_by = RMSE)</code></pre>
 <pre class="r"><code>compare.all %&gt;% arrange(RMSE) %&gt;% mutate(Final.Rank = rank(RMSE))</code></pre>
 <pre><code>##           model     RMSE Final.Rank
 ## 1 random.forest 5433.865          1
-## 2          mod2 5500.102          2
+## 2  LinearModel1 5500.102          2
 ## 3      boostFit 5570.850          3
-## 4          mod3 5585.892          4</code></pre>
-<p>Automation Below is the code (also found in the file
-render_w_automation.R) that is used to automate production of the six
-data channel html documents. This is run in the command line and
-produces the six separate reports.</p>
-<pre class="r"><code>channels &lt;- c(&quot;data_channel_is_lifestyle&quot;,&quot;data_channel_is_entertainment&quot;,
-    &quot;data_channel_is_bus&quot;,
-    &quot;data_channel_is_socmed&quot;,
-    &quot;data_channel_is_tech&quot;,
-    &quot;data_channel_is_world&quot;)
-
-for(i in 1:6)
-{rmarkdown::render(&quot;project2.rmd&quot;,
-                  output_format=&quot;html_document&quot;,
-                  params=list(datachannel=channels[i]),
-                  output_file = channels[i])
-}</code></pre>
+## 4  LinearModel2 5585.892          4</code></pre>
 </div>
 </div>
 
