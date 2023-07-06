@@ -1,7 +1,7 @@
-Project 2
+Project 2C
 ================
-Grace Holliday, Damon D’Ambrosio
-2023-07-05
+   Grace Holliday  
+   Damon D’Ambrosio
 
 - [Purpose](#purpose)
 - [Required packages](#required-packages)
@@ -11,7 +11,8 @@ Grace Holliday, Damon D’Ambrosio
 ## Purpose
 
 The purpose of this repo is to host the files necessary to complete
-Project 2. These include this very `README.md` file, along with the
+Project 2. These include this very `README.md` file (and the
+`README.Rmd` file, which was knit to create said file), along with the
 following:
 
 - `project2.Rmd`, which serves as the backbone for all of the analyses,

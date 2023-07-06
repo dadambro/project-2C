@@ -1,7 +1,8 @@
 ---
-title: "Project 2"
-author: "Grace Holliday, Damon D'Ambrosio"
-date: "`r Sys.Date()`"
+title: "Project 2C"
+author:    |
+  |    Grace Holliday
+  |    Damon D'Ambrosio
 output:
   github_document:
     html_preview: false
@@ -11,7 +12,7 @@ output:
 
 ## Purpose
 
-The purpose of this repo is to host the files necessary to complete Project 2. These include this very `README.md` file, along with the following:
+The purpose of this repo is to host the files necessary to complete Project 2. These include this very `README.md` file (and the `README.Rmd` file, which was knit to create said file), along with the following:
 
 - `project2.Rmd`, which serves as the backbone for all of the analyses, which are automated
 - `render_w_automation.R`, which is used to knit `project2.Rmd` in an automated fashion and produce the requisite outputs
