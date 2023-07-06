@@ -1,6 +1,7 @@
 # **Project-2C**
 
-## Grace Holliday and Damon D'Ambrosio
+**Grace Holliday and Damon D'Ambrosio**
+2023-07-05
 
 ## Purpose
 
@@ -36,19 +37,18 @@ The links to the various automated analyses can be found below:
 
 The following code, which exists as the `render_w_automation.R` separately in the repository, creates the linked analyses above via the `project2.Rmd` file:
 
-```{r render_w_automation, eval = FALSE}
-channels <- c("data_channel_is_lifestyle","data_channel_is_entertainment",
-    "data_channel_is_bus",
-    "data_channel_is_socmed",
-    "data_channel_is_tech",
-    "data_channel_is_world")
+`{r render_w_automation, eval = FALSE}`
+`channels <- c("data_channel_is_lifestyle","data_channel_is_entertainment",`
+    `"data_channel_is_bus",`
+    `"data_channel_is_socmed",`
+    `"data_channel_is_tech",`
+    `"data_channel_is_world")`
 
-for(i in 1:6)
-{rmarkdown::render("project2.rmd",
-                  output_format="github_document",
-                  params=list(datachannel=channels[i]),
-                  output_file = channels[i])
-}
-```
+`for(i in 1:6)`
+`{rmarkdown::render("project2.Rmd",`
+                 ` output_format="github_document",`
+                  `params=list(datachannel=channels[i]),`
+                  `output_file = channels[i])`
+`}`
 
 

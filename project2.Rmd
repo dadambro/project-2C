@@ -1,7 +1,7 @@
 ---
 title: "Project 2"
 author: "Grace Holliday and Damon D'Ambrosio"
-date: "2023-07-03"
+date: "2023-07-05"
 output: github_document
 params: 
   datachannel:
@@ -18,6 +18,7 @@ library(caret)
 library(gbm)
 library(randomForest)
 ```
+
 # Data Channel: **`r params[[1]][1]`**
 
 # Introduction 
@@ -40,6 +41,7 @@ The methods we will use to model the response include:
 - Boosted Tree  
 
 # Data
+
 ```{r read_in}
 dat <- read_csv("OnlineNewsPopularity.csv")
 
@@ -76,7 +78,8 @@ dattype <- dattype[,-c(4:9)]
 
 First, we will produce basic summary statistics and plots about the training 
 data. To do this, we first need to divide the data into a training and test 
-set.  
+set.
+
 ```{r data_setup}
 # First, establishing every categorical variable as a character
 # so can change the factor
@@ -206,22 +209,26 @@ datTest <- dattype[test, ]
 
 ```
 
-## Summary Statistics  
+## Summary Statistics
+
 Now, we will conduct exploratory data analysis through creation of basic 
 summary statistics and graphs exploring variables of interest to our 
 response (shares) before we select variables for potential models.
 
 ### Mean Shares by Day
+
 ```{r summary1}
 datTrain %>%
   group_by(day) %>%
   summarise_at(vars(shares), list(name = mean))
 ```
+
 This summary reveals the average number of shares by day of the week
 (Days 1-7, Mon-Sun).  The highest average represents the day with the most
 shares.  A day of 0 means no day was specified.
 
 ### Total Multimedia (Images and Videos) by Day
+
 ```{r summary2}
 datTrain %>% group_by(day) %>%
   mutate(total.media = num_imgs + num_videos) %>%
@@ -240,28 +247,34 @@ have more multimedia objects), may indicate some type of collinearity between
 ## Graphs  
 
 ### Number of Images vs Shares
+
 We can inspect the trend of shares as a function of the number of images.  If 
 the points show an upward trend, then articles with more images tend to be 
 shared more often.  If the points show a downward trend, then articles with 
 less images tend to be shared more often.
+
 ```{r graph1}
 plot(datTrain$shares~datTrain$num_imgs)
 ```
 
 ### Title Subjectivity vs Shares
+
 We can inspect the trend of shares as a function of title subjectivity.  If the 
 points show an upward trend, then articles with higher title subjectivity tend
 to be shared more often.  If the points show a downward trend, then articles 
 with lower title subjectivity tend to be shared more often.
+
 ```{r graph2}
 plot(datTrain$shares~datTrain$title_subjectivity)
 ```
 
 ### Average Number of Keywords vs Shares
+
 We can inspect the trend of shares as a function of number of keywords.  If the 
 bars show an upward trend, then articles with more keywords tend to be shared
 more often.  If the bars show a downward trend, then articles with less 
 keywords tend to be shared more often.
+
 ```{r graph3}
 datTrain$num_keywords <- as.factor(datTrain$num_keywords)
 means <- datTrain %>%
@@ -273,10 +286,12 @@ datTrain$num_keywords <- as.numeric(datTrain$num_keywords)
 ```
 
 ### Images vs Videos
+
 We can inspect possible relationships between the number of images and videos 
 in an article. If some type of relationship is evident (e.g., articles with
 more images tend to have more videos), it may suggest some collinearity between
 these two variables.
+
 ```{r graph4, message = FALSE}
 g <- ggplot(datTrain, aes(x = scale(num_videos), y = scale(num_imgs)))
 
@@ -288,6 +303,7 @@ g + geom_point() +
 ```
 
 ### Positive vs negative word rates
+
 We can inspect the relationship between positive and negative word rates in 
 articles. If some type of relationship is evident (e.g., articles with higher 
 positive word rates tend to have lower negative word rates), it may suggest 
@@ -304,6 +320,7 @@ g + geom_point() +
 ```
 
 ### Title subjectivity by day of week
+
 We can inspect the relationship between title subjectivity and the day of the 
 week to see if certain days tend to have more/less subjective article titles.
 
@@ -328,6 +345,7 @@ the sum of the squared residuals.
 
 This first model will explore the impact of images as combined with number of 
 key words, title subjectivity, sentiment polarity, and positive word rate.
+
 ```{r lm_1}
 #Train model
 LinearModel1 <- train(shares ~ num_imgs+num_keywords+title_subjectivity+
@@ -352,6 +370,7 @@ retained as a variable. Instead of exploring subjectivity and postive word
 rates, this model explores the "negative" (i.e., global rate of negative words
 and maximum polarity of negative words). It also includes an interaction 
 between the number of videos and number of keywords.
+
 ```{r lm_2}
 #Train model
 LinearModel2 <- train(shares ~ num_videos + num_keywords + 
@@ -360,6 +379,8 @@ LinearModel2 <- train(shares ~ num_videos + num_keywords +
               method = "lm",
               preProcess = c("center", "scale"), 
               trControl = trainControl(method = "cv", number = 5))
+
+summary(LinearModel2)
 
 #Run on test data
 LinearModel2.predict <- predict(LinearModel2, newdata = datTest)
@@ -394,14 +415,15 @@ one another, which allows for a greater reduction in variation once the
 outcomes of all trees are averaged.
 
 Below is a random forest model to predict shares:
+
 ```{r random_forest}
 
-#Create model
+#Create model. Constraining mtry to a max possible value of 12, which is ~1/3 of all possible variables
 random.forest.fit <- train(shares ~ ., data = datTrain,
                            method = "rf",
                            preProcess = c("center", "scale"),
                            trControl = trainControl(method = "cv", number = 5),
-                           tuneGrid = data.frame(mtry = 1:17))
+                           tuneGrid = data.frame(mtry = 1:12))
 
 # plot fit
 plot(random.forest.fit)
@@ -426,11 +448,13 @@ random.forest.predict <- predict(random.forest.fit, newdata = datTest)
 random.forest.compare <- postResample(random.forest.predict, 
                                       obs = datTest$shares)
 ```
+
 Here, the red lines are the predicted values for each observation.  If the red
 lines are close to following the blue dots (which are representative of the
 actual value for each observation), then the model is closely predicting.
 
 ### Boosted Tree Model  
+
 Boosting is a general approach that can be applied to trees and allows for the 
 slow training of trees.  The trees are grown sequentially with each subsequent 
 tree being grown on a modified version of the original data.  The predictions
@@ -472,6 +496,7 @@ boostFit.predict <- predict(boostFit, newdata = datTest)
 #Obtain RMSE from test set, which will be used in automated comparison
 boostFit.compare <- postResample(boostFit.predict, obs = datTest$shares)
 ```
+
 Here, the red lines are the predicted values for each observation.  If the red
 lines are close to following the blue dots (which are representative of the
 actual value for each observation), then the model is closely predicting.
@@ -490,8 +515,8 @@ random.forest.RMSE <- random.forest.compare[1]
 boostFit.RMSE <- boostFit.compare[1]
 
 compare.all <- data.frame(
-                    model = c("LinearModel1", "LinearModel2", "random.forest", 
-                              "boostFit"),
+                    model = c("First Linear", "Second Linear", "Random Forest", 
+                              "Boosted Tree"),
                     RMSE = c(LinearModel1.RMSE, LinearModel2.RMSE, 
                              random.forest.RMSE, boostFit.RMSE))
 
