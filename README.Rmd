@@ -1,12 +1,12 @@
 ---
 title: "Project 2"
-author: "Grace Holliday and Damon D'Ambrosio"
+author: "Grace Holliday, Damon D'Ambrosio"
 date: "`r Sys.Date()`"
 output:
   github_document:
     html_preview: false
     toc: true
-    toc_depth: 4
+    toc_depth: 2
 ---
 
 ## Purpose

@@ -1,6 +1,6 @@
 Project 2
 ================
-Grace Holliday and Damon D’Ambrosio
+Grace Holliday, Damon D’Ambrosio
 2023-07-05
 
 - [Purpose](#purpose)
