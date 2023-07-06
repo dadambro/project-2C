@@ -1,25 +1,21 @@
-Project 2
-================
-Grace Holliday and Damon D’Ambrosio
-2023-07-05
-
-- [Purpose](#purpose)
-- [Required packages](#required-packages)
-- [Links to analyses](#links-to-analyses)
-- [Code to create analyses](#code-to-create-analyses)
+---
+title: "Project 2"
+author: "Grace Holliday and Damon D'Ambrosio"
+date: "`r Sys.Date()`"
+output:
+  github_document:
+    html_preview: false
+    toc: true
+    toc_depth: 4
+---
 
 ## Purpose
 
-The purpose of this repo is to host the files necessary to complete
-Project 2. These include this very `README.md` file, along with the
-following:
+The purpose of this repo is to host the files necessary to complete Project 2. These include this very `README.md` file, along with the following:
 
-- `project2.Rmd`, which serves as the backbone for all of the analyses,
-  which are automated
-- `render_w_automation.R`, which is used to knit `project2.Rmd` in an
-  automated fashion and produce the requisite outputs
-- Various `data_channel_is_X.html` files, which are created as a result
-  of the automated analysis/knitting
+- `project2.Rmd`, which serves as the backbone for all of the analyses, which are automated
+- `render_w_automation.R`, which is used to knit `project2.Rmd` in an automated fashion and produce the requisite outputs
+- Various `data_channel_is_X.html` files, which are created as a result of the automated analysis/knitting
 - `OnlineNewsPopulatiry.csv`, which is the raw data used for analysis
 
 ## Required packages
@@ -45,11 +41,10 @@ The links to the various automated analyses can be found below:
 
 ## Code to create analyses
 
-The following code, which exists as the `render_w_automation.R`
-separately in the repository, creates the linked analyses above via the
-`project2.Rmd` file:
+The following code, which exists as the `render_w_automation.R` separately in the repository, creates the linked analyses above via the `project2.Rmd` file:
 
-``` r
+```{r render_w_automation, eval = FALSE}
+
 channels <- c("data_channel_is_lifestyle","data_channel_is_entertainment",
     "data_channel_is_bus",
     "data_channel_is_socmed",
@@ -62,4 +57,5 @@ for(i in 1:6)
                   params=list(datachannel=channels[i]),
                   output_file = channels[i])
 }
+
 ```
