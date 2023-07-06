@@ -1,7 +1,7 @@
 ---
 title: "Project 2"
 author: "Grace Holliday and Damon D'Ambrosio"
-date: "2023-07-05"
+date: "2023-07-06"
 output: github_document
 params: 
   datachannel:
@@ -42,7 +42,7 @@ The methods we will use to model the response include:
 
 # Data
 
-```{r read_in}
+```{r read_in, results = "hide"}
 dat <- read_csv("OnlineNewsPopularity.csv")
 
 # Subset data to variables we want
@@ -523,7 +523,7 @@ compare.all <- data.frame(
 winner <- compare.all %>% slice_min(order_by = RMSE)
 ```
 
-The lowest RMSE obtained on the test set was **`r winner[1,2]`**, which belongs 
+The lowest RMSE obtained on the test set was **`r round(winner[1,2],2)`**, which belongs 
 to the **`r winner[1,1]`** model. Therefore, **`r winner[1,1]`** is the winner!
 
 The final standings of all 4 models can be seen below:
